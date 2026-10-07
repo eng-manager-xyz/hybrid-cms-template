@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "create-profound-app",
+      "name": "create-median-app",
       "dependencies": {
         "picocolors": "^1.0.1",
       },

@@ -15,12 +15,12 @@ type Framework = "next" | "tanstack";
 const nextTemplates = {
   base: {
     label: "Base",
-    description: "Starter CMS template (Next.js)",
+    description: "Minimal site: empty block registry, welcome page (Next.js)",
     dir: join(__dirname, "nextjs", "template", "base"),
   },
   docs: {
     label: "Docs",
-    description: "Full documentation site (Next.js)",
+    description: "Documentation site: navbar, sidebar, search, Markdown (Next.js)",
     dir: join(__dirname, "nextjs", "template", "docs"),
   },
 } as const;
@@ -28,12 +28,12 @@ const nextTemplates = {
 const tanstackTemplates = {
   base: {
     label: "Base",
-    description: "Starter CMS template (TanStack Start)",
+    description: "Minimal site: empty block registry, welcome page (TanStack Start)",
     dir: join(__dirname, "tanstack", "template", "base"),
   },
   docs: {
     label: "Docs",
-    description: "Full documentation site (TanStack Start)",
+    description: "Documentation site: navbar, sidebar, search, Markdown (TanStack Start)",
     dir: join(__dirname, "tanstack", "template", "docs"),
   },
 } as const;
@@ -57,7 +57,7 @@ function npmArgvHaystack(): string {
 /** How the CLI was launched: env override, npm argv, full argv, then basename(argv[1]) for Unix shims. */
 function binInvocationHaystack(): string {
   const parts = [
-    process.env.PROFOUND_DEFAULT_FRAMEWORK ?? "",
+    process.env.MEDIAN_DEFAULT_FRAMEWORK ?? "",
     npmArgvHaystack(),
     ...process.argv,
     basename(process.argv[1] ?? ""),
@@ -81,21 +81,21 @@ const args = process.argv.slice(2);
 const noGit = args.includes("--no-git");
 const noInstall = args.includes("--no-install");
 const projectName =
-  args.find((a) => !a.startsWith("--")) ?? "my-profound-app";
+  args.find((a) => !a.startsWith("--")) ?? "my-median-app";
 const frameworkArg = parseFrameworkArg(args);
 const templateArg = parseTemplateArg(args);
 
 function defaultFrameworkFromBin(): Framework | undefined {
-  const env = process.env.PROFOUND_DEFAULT_FRAMEWORK?.trim().toLowerCase();
+  const env = process.env.MEDIAN_DEFAULT_FRAMEWORK?.trim().toLowerCase();
   if (env === "tanstack" || env === "next") {
     return env;
   }
 
   const hay = binInvocationHaystack().toLowerCase();
-  if (hay.includes("create-profound-tanstack")) {
+  if (hay.includes("create-median-tanstack")) {
     return "tanstack";
   }
-  if (hay.includes("create-profound-next")) {
+  if (hay.includes("create-median-next")) {
     return "next";
   }
   return undefined;
@@ -165,7 +165,10 @@ async function main() {
     console.log(`  ${pc.cyan("bun install")}`);
   }
 
+  console.log(`  ${pc.cyan("cp .env.example .env")}  ${pc.dim("# set MEDIAN_WEBSITE_ID, MEDIAN_API_KEY and DATASET_ENDPOINT")}`);
   console.log(`  ${pc.cyan("bun dev")}`);
+  console.log();
+  console.log(`  ${pc.dim("Admin panel:")} http://localhost:3000/admin`);
   console.log();
 }
 
@@ -187,11 +190,11 @@ async function resolveFramework(
 
 async function selectFramework(): Promise<Framework> {
   const options: { id: Framework; label: string; description: string }[] = [
-    { id: "next", label: "Next.js", description: "App Router + cms-renderer" },
+    { id: "next", label: "Next.js", description: "App Router, deploys to Vercel" },
     {
       id: "tanstack",
       label: "TanStack Start",
-      description: "Vite + TanStack Router + cms-renderer",
+      description: "Vite + TanStack Router, deploys to Vercel or any Node host",
     },
   ];
   let selectedIndex = 0;

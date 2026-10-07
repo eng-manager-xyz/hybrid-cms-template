@@ -1,40 +1,53 @@
-# Docs template (TanStack Start)
+# {{PROJECT_NAME}}
 
-Hostable documentation site on **TanStack Start** + published `cms-renderer`, mirroring the Next.js docs template under `src/nextjs/template/docs`.
-This template includes Nitro so it can deploy to Vercel using the current TanStack Start integration.
-
-## Install
+A documentation site on TanStack Start whose pages come from [Median CMS](https://app.mediancms.com): navbar with search, a sidebar grouped by category, Markdown articles with highlighted code, and light and dark themes.
 
 ```bash
-bun install
+cp .env.example .env
+bun dev
 ```
 
-## Environment
+## How it works
 
-Copy `.env.example` to `.env.local` and set:
+- **Published pages are static.** The build lists every published URL and prerenders it.
+  Unknown URLs are a 404.
+- **`/cms-preview_/<path>`** renders the live draft on every request with the overlay the CMS
+  Template Builder uses to select and edit blocks; `?edit_mode=true` on any page does the same.
+- **`/admin`** opens the Median admin panel on your own domain: `createCmsProxy()` from
+  `cms-renderer/proxy` forwards the panel and the requests it makes (its files, `/wasm`
+  assets, server functions and API routes). Set your domain in the CMS (Settings → Websites).
+- **Publishing needs a rebuild** for the static pages to change.
 
-```env
-NEXT_PUBLIC_BUNNY_CDN_URL=https://cms-profound.b-cdn.net
-NEXT_PUBLIC_CMS_API_URL=https://cms.dev.tryprofound.com
-NEXT_PUBLIC_PROFOUND_WEBSITE_ID=your-website-id
-PROFOUND_API_KEY=your-api-key
-```
+## Files
+
+| File | |
+| --- | --- |
+| `scripts/build-content.ts` | Reads every published page once into `.docs-content.json` (runs before `dev` and `build`). |
+| `src/lib/block-registry.ts` | `header`, `sidebar`, `content` and `footer` blocks → the docs components. |
+| `src/lib/docs-page.server.ts` | Shapes each block once (Markdown, sidebar sections, search entries). |
+| `src/routes/$.tsx` | Published pages, prerendered from the snapshot. |
+| `src/routes/[cms-preview_].$.tsx` | The draft preview. |
+| `src/start.ts` | Forwards `/admin` to Median. |
+| `src/generated/cms-schemas.ts` | Types for the docs components; refresh with `bun run generate-schemas`. |
 
 ## Scripts
 
-```bash
-bun run dev
-bun run build
-bun run generate-schemas
-```
+| Command | |
+| --- | --- |
+| `bun dev` | Development server on http://localhost:3000 (admin panel at `/admin`). |
+| `bun run build` | Prerender every published page. |
+| `bun start` | Run the production build (`bun .output/server/index.mjs`). |
+| `bun run generate-schemas` | Write Zod schemas and types for the website's components to `src/generated/`. |
 
-`src/generated/cms-schemas.ts` is committed so `bun run build` works on a fresh checkout / Vercel without CMS access. Re-run `bun run generate-schemas` (and commit) when schemas change in the CMS.
+## Environment
 
-`bun run build` runs through Vite with Nitro enabled, which produces the deployment output Vercel expects.
+Copy `.env.example` to `.env`:
 
-## Notes
+| Variable | |
+| --- | --- |
+| `MEDIAN_WEBSITE_ID` | The website, from the CMS (Settings → Websites). |
+| `MEDIAN_API_KEY` | A read key (`content_read`). Server-only; it also reads drafts for the preview, so do not commit it. |
+| `MEDIAN_CMS_URL` | Optional: the admin panel `/admin` forwards to (default `https://app.mediancms.com`). |
+| `DATASET_ENDPOINT` | The Median page service URL. |
 
-- **CMS catch-all:** `src/routes/$.tsx` uses `cms-renderer/lib/parametric-route`.
-- **Live refresh:** `DocsRefresher` subscribes to CMS content changes and calls `router.invalidate()` (no Next `revalidatePath`).
-- **Search index:** built at request time (no `next/cache`); consider adding your own cache layer for very large sites.
-- **Proxy:** the Next template’s `proxy.ts` is not ported; configure your host or Vite dev proxy if you need `/admin` or `/api` passthrough to the CMS origin.
+On Vercel, set the same variables in the project settings.

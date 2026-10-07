@@ -1,43 +1,52 @@
 # {{PROJECT_NAME}}
 
-Bootstrapped with [`create-profound-app`](https://github.com/tryprofound/hybrid-cms-template) (TanStack Start + Profound CMS).
-This template includes Nitro so it can deploy cleanly to Vercel's TanStack Start runtime.
-
-## Setup
+A website on TanStack Start whose pages come from [Median CMS](https://app.mediancms.com).
 
 ```bash
-bun install
 cp .env.example .env
-# set PROFOUND_API_KEY, NEXT_PUBLIC_PROFOUND_WEBSITE_ID, NEXT_PUBLIC_CMS_API_URL
 bun dev
 ```
 
-## CMS routes
+## How it works
 
-- **Home** — `src/routes/index.tsx` (static marketing shell).
-- **Parametric pages** — `src/routes/$.tsx` maps URL paths to Profound via `cms-renderer/lib/parametric-route` (splat / `$` → slug segments).
+- **Published pages are static.** The build lists every published URL and prerenders it.
+  Unknown URLs are a 404.
+- **`/cms-preview_/<path>`** renders the live draft on every request with the overlay the CMS
+  Template Builder uses to select and edit blocks; `?edit_mode=true` on any page does the same.
+- **`/admin`** opens the Median admin panel on your own domain: `createCmsProxy()` from
+  `cms-renderer/proxy` forwards the panel and the requests it makes (its files, `/wasm`
+  assets, server functions and API routes). Set your domain in the CMS (Settings → Websites).
+- **Publishing needs a rebuild** for the static pages to change.
 
-Register custom block components in the empty `registry` in `src/routes/$.tsx` as you add schemas in the CMS.
+## Files
+
+| File | |
+| --- | --- |
+| `src/lib/registry.ts` | CMS UI element name → your React component. Start here. |
+| `src/lib/median.server.ts` | The `Median` client (server-only). |
+| `src/routes/$.tsx` | Published pages (`ParametricPage`); prerendered from the list in `vite.config.ts`. |
+| `src/routes/[cms-preview_].$.tsx` | The draft preview (`ParametricPreview`). |
+| `src/start.ts` | Forwards `/admin` to Median. |
+| `src/components/Welcome.tsx` | Shown at `/` until the CMS publishes a home page. |
 
 ## Scripts
 
-| Command               | Description                          |
-| --------------------- | ------------------------------------ |
-| `bun dev`             | Dev server (port 3000)               |
-| `bun build`           | Production build via Vite + Nitro    |
-| `bun preview`         | Preview production build             |
-| `bun generate-schemas`| Sync Zod schemas from the CMS into `src/generated` |
+| Command | |
+| --- | --- |
+| `bun dev` | Development server on http://localhost:3000 (admin panel at `/admin`). |
+| `bun run build` | Prerender every published page. |
+| `bun start` | Run the production build (`bun .output/server/index.mjs`). |
+| `bun run generate-schemas` | Write Zod schemas and types for the website's components to `src/generated/`. |
 
-`src/generated/cms-schemas.ts` is committed so fresh checkouts and Vercel deploys build without calling the CMS. Re-run `bun generate-schemas` (and commit) when content models change.
+## Environment
 
-For deeper docs and guides, see the Profound CMS documentation.
+Copy `.env.example` to `.env`:
 
-## Deploying to Vercel
+| Variable | |
+| --- | --- |
+| `MEDIAN_WEBSITE_ID` | The website, from the CMS (Settings → Websites). |
+| `MEDIAN_API_KEY` | A read key (`content_read`). Server-only; it also reads drafts for the preview, so do not commit it. |
+| `MEDIAN_CMS_URL` | Optional: the admin panel `/admin` forwards to (default `https://app.mediancms.com`). |
+| `DATASET_ENDPOINT` | The Median page service URL. |
 
-No extra Vercel config should be required. Import the project in Vercel and use the default build command:
-
-```bash
-bun run build
-```
-
-Nitro will produce the deployment output Vercel expects for TanStack Start.
+On Vercel, set the same variables in the project settings.

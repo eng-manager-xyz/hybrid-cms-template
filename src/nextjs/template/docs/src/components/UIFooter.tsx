@@ -1,50 +1,87 @@
-import type { BlockComponentProps } from 'cms-renderer/lib/types';
-import Image from 'next/image';
+import type { BlockComponentProps } from 'cms-renderer';
+import type { ReactNode } from 'react';
 import type { Uifooter } from '@/generated/cms-schemas';
-import { buildAssetUrl } from '@/lib/asset-url';
+import { buildDocsAssetUrl } from '@/lib/asset-url';
+import { resolveBlockAppearance } from '@/lib/block-layout';
+import type { FooterView, SocialNetwork } from '@/lib/block-views';
+import { showsLanguageDropdown } from '@/lib/docs-route';
+import { linkHref } from '@/lib/link-href';
 import { GithubIcon, LinkedInIcon, XIcon } from './icons';
+import { LanguageDropdown } from './LanguageDropdown';
+import { ThemeMenu } from './ThemeMenu';
 
-export default async function UIFooter({ content }: BlockComponentProps<Uifooter>) {
-  const { powered_by, poweredby_url, x_url, github_url, linkedin_url, status_page_url } = content;
+const SOCIAL: Record<SocialNetwork, { icon: ReactNode; label: string }> = {
+  x: { icon: <XIcon />, label: 'X' },
+  github: { icon: <GithubIcon />, label: 'GitHub' },
+  linkedin: { icon: <LinkedInIcon />, label: 'LinkedIn' },
+};
+
+export default function UIFooter({
+  content,
+  layout,
+  routeParams,
+}: BlockComponentProps<Uifooter & FooterView>) {
+  const showLanguageDropdown = showsLanguageDropdown(routeParams);
+  const appearance = resolveBlockAppearance(content, layout);
+  const footerAlignmentClasses = appearance.hasConfiguredAlignment
+    ? [appearance.itemsClass, appearance.justifyClass, appearance.textAlignClass]
+    : ['items-center', 'text-center', 'sm:items-center', 'sm:justify-between', 'sm:text-left'];
+  const { powered_by, social_links } = content;
+  const poweredByUrl = linkHref(content.poweredby_url);
+  const statusPageUrl = linkHref(content.status_page_url);
 
   const poweredByAsset = powered_by as
     | { _asset?: { url?: string; mime_type?: string }; alt?: string }
     | undefined;
+
   const logoAlt = powered_by?.alt;
-  const logoUrl = buildAssetUrl(poweredByAsset?._asset?.url, {
+
+  const logoUrl = buildDocsAssetUrl(poweredByAsset?._asset?.url, {
     mimeType: poweredByAsset?._asset?.mime_type,
   });
 
-  const socialLinks = [
-    { href: x_url, icon: <XIcon />, label: 'X' },
-    { href: github_url, icon: <GithubIcon />, label: 'GitHub' },
-    { href: linkedin_url, icon: <LinkedInIcon />, label: 'LinkedIn' },
-  ].filter((l) => l.href);
-
   return (
-    <footer className="border-t border-[var(--border)] bg-[var(--background)] text-[var(--text)] px-4 pt-6 pb-16 font-sans sm:px-6 lg:px-12">
-      <div className="mx-auto flex w-full max-w-[48rem] flex-col gap-6 sm:flex-row sm:items-center sm:justify-between lg:mx-0 lg:pl-4">
+    <footer
+      className={[
+        'border-[var(--border)] border-t px-4 pt-8 pb-16 font-sans text-[var(--text)] sm:px-6 lg:px-12',
+        appearance.backgroundClass,
+        appearance.hasConfiguredAlignment ? appearance.textAlignClass : '',
+      ].join(' ')}
+      data-cms-live-background=""
+      data-cms-live-default-background="var(--background)"
+      style={appearance.style}
+    >
+      <div
+        className={[
+          'mx-auto flex w-full max-w-[48rem] flex-col gap-6 sm:flex-row',
+          appearance.placementClass,
+          ...footerAlignmentClasses,
+        ].join(' ')}
+        data-cms-live-alignment=""
+        data-cms-live-placement=""
+      >
         <div className="flex items-center gap-5">
-          {socialLinks.map(({ href, icon, label }) => (
+          {social_links.map(({ network, href }) => (
             <a
-              key={label}
-              href={href}
-              title={`Visit our ${label} profile`}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={label}
+              aria-label={SOCIAL[network].label}
               className="text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
+              href={href}
+              key={network}
+              rel="noopener noreferrer"
+              target="_blank"
+              title={`Visit our ${SOCIAL[network].label} profile`}
             >
-              {icon}
+              {SOCIAL[network].icon}
             </a>
           ))}
-          {status_page_url && (
+
+          {statusPageUrl && (
             <a
-              href={status_page_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="View status page"
               className="flex items-center gap-2 text-[11px] text-[var(--text-muted)] no-underline transition-colors hover:text-[var(--text)]"
+              href={statusPageUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+              title="View status page"
             >
               <span aria-hidden="true" className="relative inline-flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
@@ -54,29 +91,35 @@ export default async function UIFooter({ content }: BlockComponentProps<Uifooter
             </a>
           )}
         </div>
+
         <a
-          href={poweredby_url ?? '#'}
-          target="_blank"
-          rel="noopener noreferrer"
-          title="Visit our powered by profile"
           className="flex items-center gap-2 no-underline opacity-60 transition-opacity hover:opacity-100 sm:ml-auto"
+          href={poweredByUrl ?? '#'}
+          rel="noopener noreferrer"
+          target="_blank"
+          title="Visit our powered by profile"
         >
-          <span className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-soft)]">
+          <span className="text-[11px] text-[var(--text-soft)] uppercase tracking-[0.18em]">
             Powered By
           </span>
+
           {logoUrl ? (
-            <Image
-              src={logoUrl}
+            <img
               alt={logoAlt ?? ''}
-              width={95}
+              className="h-auto w-auto object-contain"
               height={20}
-              style={{ width: 'auto', height: 'auto' }}
-              className="object-contain"
+              src={logoUrl}
+              width={95}
             />
           ) : (
             <span className="text-[var(--text-soft)] text-xs">{logoAlt}</span>
           )}
         </a>
+
+        <div className="flex items-center justify-center gap-4 sm:hidden">
+          <LanguageDropdown showLanguageDropdown={showLanguageDropdown} />
+          <ThemeMenu />
+        </div>
       </div>
     </footer>
   );

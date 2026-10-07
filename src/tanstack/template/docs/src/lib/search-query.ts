@@ -1,25 +1,27 @@
 import type { SearchEntry } from './search-index';
 
 interface PreparedSearchEntry {
-  entry: SearchEntry;
-  title: string;
   category: string;
-  headings: string;
   content: string;
+  entry: SearchEntry;
+  headings: string;
+  title: string;
 }
 
 const preparedEntriesCache = new WeakMap<SearchEntry, PreparedSearchEntry>();
 
 function getPreparedEntry(entry: SearchEntry): PreparedSearchEntry {
   const cached = preparedEntriesCache.get(entry);
-  if (cached) return cached;
+  if (cached) {
+    return cached;
+  }
 
   const preparedEntry = {
-    entry,
-    title: entry.title.toLowerCase(),
     category: entry.category.toLowerCase(),
-    headings: entry.headings.join(' ').toLowerCase(),
     content: entry.content.toLowerCase(),
+    entry,
+    headings: entry.headings.join(' ').toLowerCase(),
+    title: entry.title.toLowerCase(),
   };
 
   preparedEntriesCache.set(entry, preparedEntry);
@@ -28,7 +30,9 @@ function getPreparedEntry(entry: SearchEntry): PreparedSearchEntry {
 
 export function getSearchResults(entries: SearchEntry[], query: string): SearchEntry[] {
   const normalizedQuery = query.trim().toLowerCase();
-  if (!normalizedQuery) return entries.slice(0, 8);
+  if (!normalizedQuery) {
+    return entries.slice(0, 8);
+  }
 
   const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
 
@@ -39,16 +43,32 @@ export function getSearchResults(entries: SearchEntry[], query: string): SearchE
 
       let score = 0;
 
-      if (title.includes(normalizedQuery)) score += 120;
-      if (headings.includes(normalizedQuery)) score += 80;
-      if (category.includes(normalizedQuery)) score += 40;
-      if (content.includes(normalizedQuery)) score += 20;
+      if (title.includes(normalizedQuery)) {
+        score += 120;
+      }
+      if (headings.includes(normalizedQuery)) {
+        score += 80;
+      }
+      if (category.includes(normalizedQuery)) {
+        score += 40;
+      }
+      if (content.includes(normalizedQuery)) {
+        score += 20;
+      }
 
       for (const token of tokens) {
-        if (title.includes(token)) score += 24;
-        if (headings.includes(token)) score += 16;
-        if (category.includes(token)) score += 8;
-        if (content.includes(token)) score += 4;
+        if (title.includes(token)) {
+          score += 24;
+        }
+        if (headings.includes(token)) {
+          score += 16;
+        }
+        if (category.includes(token)) {
+          score += 8;
+        }
+        if (content.includes(token)) {
+          score += 4;
+        }
       }
 
       return { entry, score };
@@ -69,7 +89,9 @@ export function buildSnippet(entry: SearchEntry, query: string): string {
   const lowered = haystack.toLowerCase();
   const matchIndex = lowered.indexOf(normalizedQuery);
 
-  if (matchIndex === -1) return haystack.slice(0, 140);
+  if (matchIndex === -1) {
+    return haystack.slice(0, 140);
+  }
 
   const start = Math.max(0, matchIndex - 50);
   const end = Math.min(haystack.length, matchIndex + normalizedQuery.length + 90);

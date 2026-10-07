@@ -3,17 +3,17 @@
 import { MagnifyingGlassIcon } from '@heroicons/react/16/solid';
 import { useEffect, useId, useRef } from 'react';
 
-type SearchBarProps = {
-  placeholder: string;
-  className?: string;
-  value?: string;
-  onChange?: (value: string) => void;
-  onFocus?: () => void;
-  onClick?: () => void;
-  readOnly?: boolean;
+interface SearchBarProps {
   autoFocus?: boolean;
+  className?: string;
+  onChange?: (value: string) => void;
+  onClick?: () => void;
+  onFocus?: () => void;
+  placeholder: string;
+  readOnly?: boolean;
   showShortcut?: boolean;
-};
+  value?: string;
+}
 
 export function SearchBar({
   placeholder,
@@ -30,7 +30,9 @@ export function SearchBar({
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    if (!autoFocus) return;
+    if (!autoFocus) {
+      return;
+    }
     inputRef.current?.focus();
   }, [autoFocus]);
 
@@ -43,24 +45,24 @@ export function SearchBar({
         className,
       ].join(' ')}
     >
-      <label htmlFor={inputId} className="flex shrink-0 text-[var(--text-muted)]">
+      <label className="flex shrink-0 text-[var(--text-muted)]" htmlFor={inputId}>
         <MagnifyingGlassIcon className="size-3.5 shrink-0" />
       </label>
       <input
+        aria-label={placeholder}
+        className="min-w-0 flex-1 bg-transparent text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] md:text-sm"
         id={inputId}
+        onChange={(event) => onChange?.(event.target.value)}
+        onClick={() => onClick?.()}
+        onFocus={() => onFocus?.()}
+        placeholder={placeholder}
+        readOnly={readOnly}
         ref={inputRef}
         type="search"
-        placeholder={placeholder}
-        aria-label={placeholder}
         value={value}
-        readOnly={readOnly}
-        onChange={(event) => onChange?.(event.target.value)}
-        onFocus={() => onFocus?.()}
-        onClick={() => onClick?.()}
-        className="min-w-0 flex-1 bg-transparent text-[13px] text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] md:text-sm"
       />
       {showShortcut ? (
-        <kbd className="hidden bg-transparent p-0 text-xs font-sans text-[var(--text-soft)] md:block">
+        <kbd className="hidden bg-transparent p-0 font-sans text-[var(--text-soft)] text-xs md:block">
           ⌘K
         </kbd>
       ) : null}

@@ -1,67 +1,57 @@
-# create-profound-app
+# create-median-app
 
-Scaffold a **Next.js** or **TanStack Start** app with Profound CMS (`cms-renderer`).
-
-## Usage
+Create a website powered by [Median CMS](https://app.mediancms.com), on **Next.js** (deploys to
+Vercel) or **TanStack Start** (deploys to Vercel or any Node host).
 
 ```bash
-bunx create-profound-app <project-name>
+bunx create-median-app my-site          # choose the framework and template
+bunx create-median-next my-site         # Next.js
+bunx create-median-tanstack my-site     # TanStack Start
 ```
 
-**Interactive (TTY):** you will be prompted to choose a **framework** and a **template**.  
-**Non-interactive (CI):** defaults to Next.js + Base unless you pass flags (see below).
+Then:
 
 ```bash
-bunx create-profound-app <project-name> --framework=next --template=base
-bunx create-profound-app <project-name> --framework=tanstack --template=base
-bunx create-profound-app <project-name> --framework=tanstack --template=docs
-```
-
-Shortcuts (skip the framework prompt — same CLI entry):
-
-```bash
-bunx create-profound-next <project-name>
-bunx create-profound-tanstack <project-name>
-```
-
-Shortcut detection reads `npm_config_argv` and the full process argv (not only the script basename), so it works when `argv[1]` is `index.ts` on Windows. If the framework prompt still appears, pass `--framework=next|tanstack` or set `PROFOUND_DEFAULT_FRAMEWORK` to `next` or `tanstack` for that run.
-
-```bash
-cd <project-name>
+cd my-site
+cp .env.example .env   # set MEDIAN_WEBSITE_ID, MEDIAN_API_KEY and DATASET_ENDPOINT
 bun dev
 ```
 
-```bash
-bunx create-profound-app <project-name> --no-install
-```
+## Templates
 
-## Environment Variables
+| Template | What you get |
+| --- | --- |
+| `base` | An empty block registry and a welcome page at `/` until the CMS publishes one. |
+| `docs` | A documentation site: navbar with search, sidebar grouped by category, Markdown articles with highlighted code, footer, light and dark themes. |
 
-Create a `.env` or `.env.local` (see each template’s `.env.example`):
+Pick one with `--template=base|docs` and the framework with `--framework=next|tanstack`.
+Without a terminal (CI), the defaults are Next.js and `base`.
 
-```env
-PROFOUND_API_KEY=your_api_key
-NEXT_PUBLIC_PROFOUND_WEBSITE_ID=your_website_id
-NEXT_PUBLIC_CMS_API_URL=https://cms.dev.tryprofound.com
-NEXT_PUBLIC_BUNNY_CDN_URL="https://cms-profound.b-cdn.net"
-```
+## How a generated site works
 
-## TanStack Templates
+- **Published pages are static.** At build time the site lists every published URL
+  (`median.listPages()`), reads each page (`median.resolveComponent(path)`) and prerenders it
+  with `ParametricPage`. Unknown URLs are a 404.
+- **The draft preview renders on request.** `/cms-preview_/<path>` reads the live draft and
+  renders it with `ParametricPreview`, which adds the overlay the CMS Template Builder uses to
+  select and edit blocks. Opening a page with `?edit_mode=true` shows its draft too.
+- **The admin panel lives at `/admin`.** `createCmsProxy()` from `cms-renderer/proxy` forwards
+  `/admin` and the requests it makes (its files, `/wasm` assets, server functions and API
+  routes) to Median. Set the website's domain in the CMS (Settings → Websites) to use it on
+  your own domain.
+- **Publishing needs a rebuild.** Published changes reach the static pages on the next build;
+  trigger one from the CMS deploy settings or a deploy hook.
 
-- **Base** and **Docs** include a CMS catch-all route powered by `cms-renderer`’s parametric routing helper (`cms-renderer/lib/parametric-route`).
+Each template's README covers its files, environment variables and scripts.
 
-## Commands (generated app)
+## Options
 
-| Command                 | Description                        |
-| ----------------------- | ---------------------------------- |
-| `bun dev`               | Start development server           |
-| `bun build`             | Production build                   |
-| `bun generate-schemas`  | Sync Zod schemas from the CMS    |
+| Flag | Effect |
+| --- | --- |
+| `--framework=next\|tanstack` | Skip the framework prompt. |
+| `--template=base\|docs` | Skip the template prompt. |
+| `--no-install` | Do not run `bun install`. |
+| `--no-git` | Do not create a git repository. |
 
-### generate-schemas
-
-```bash
-bun generate-schemas
-```
-
-Requires `NEXT_PUBLIC_CMS_API_URL` and `NEXT_PUBLIC_PROFOUND_WEBSITE_ID`. Templates ship a committed `src/generated/cms-schemas.ts` so `bun build` works offline / on Vercel without CMS access. Re-run `generate-schemas` (and commit the file) when you change content models in the CMS.
+`MEDIAN_DEFAULT_FRAMEWORK=next|tanstack` sets the framework when the shortcut command cannot be
+detected (some Windows shells).

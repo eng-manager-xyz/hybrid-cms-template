@@ -1,59 +1,43 @@
-import { createCmsProxy } from "cms-renderer/lib/proxy";
-import { NextRequest, NextResponse } from "next/server";
-import { cmsConfig } from "@/lib/cms-config";
+import { createCmsProxy } from 'cms-renderer/proxy';
+import { type NextRequest, NextResponse } from 'next/server';
 
-const upstream = process.env.ADMIN_UPSTREAM_ORIGIN ?? cmsConfig.cmsUrl;
+const cmsProxy = createCmsProxy({ upstream: process.env.MEDIAN_CMS_URL || undefined });
 
-// The prebuilt cms-renderer proxy only forwards a fixed set of static extensions
-// (its STATIC_FILE_REGEX has no `wasm`), so the admin panel's .wasm assets never
-// reach upstream. Route `/wasm` through additionalPaths, which is forwarded
-// unconditionally before the regex/Referer gate.
-const cmsProxy = createCmsProxy({ upstream, additionalPaths: ["/wasm"] });
+const isPreviewSearch = (url: URL) =>
+  ['true', '1'].includes(url.searchParams.get('edit_mode') ?? '') ||
+  Boolean(url.searchParams.get('ai_preview'));
 
-export const proxy = async (request: NextRequest): Promise<NextResponse> => {
-  const { pathname, searchParams } = request.nextUrl;
+export async function proxy(request: NextRequest) {
+  // `/admin` and the requests it makes go to the Median admin panel.
+  const cms = await cmsProxy(request);
+  if (cms) return cms;
 
-  // Admin / api / auth routes, the admin panel's /wasm assets, and static files
-  // are handled by the shared CMS proxy (it decides per-request what to forward).
-  if (
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/api") ||
-    pathname.startsWith("/auth") ||
-    pathname.startsWith("/wasm") ||
-    pathname.startsWith("/_next") ||
-    /\.[a-zA-Z0-9]+$/.test(pathname)
-  ) {
-    return cmsProxy(request);
+  // `?edit_mode=true` (the CMS editing a page in place) renders that page's draft.
+  const url = request.nextUrl;
+  if (isPreviewSearch(url) && !url.pathname.startsWith('/cms-preview_')) {
+    const preview = url.clone();
+    preview.pathname = `/cms-preview_${url.pathname === '/' ? '' : url.pathname}`;
+    return NextResponse.rewrite(preview);
   }
-
-  // Edit mode renders through the force-dynamic /cms-preview_ route so the CMS
-  // template builder can read edit_mode / ai_preview searchParams at request time.
-  const editMode = searchParams.get("edit_mode");
-  const aiPreview = searchParams.get("ai_preview");
-
-  if (
-    (editMode === "true" || editMode === "1" || aiPreview) &&
-    !pathname.startsWith("/cms-preview_")
-  ) {
-    const url = request.nextUrl.clone();
-    url.pathname = `/cms-preview_${pathname}`;
-    return NextResponse.rewrite(url);
-  }
-
   return NextResponse.next();
-};
+}
 
 export const config = {
   matcher: [
-    // CMS proxy routes
-    "/admin",
-    "/admin/:path*",
-    "/api/:path*",
-    "/auth/:path*",
-    "/wasm/:path*",
-    "/_next/:path*",
-    "/((?:.*\\.(?:css|js|map|wasm|png|jpg|jpeg|gif|svg|ico|webp|avif|woff|woff2|ttf|eot|txt|xml))$)",
-    // Edit mode - match all page routes for ?edit_mode=true detection (excluding the preview route itself)
-    "/((?!_next/static|_next/image|favicon.ico|cms-preview_).*)",
+    '/admin/:path*',
+    '/cms-assets/:path*',
+    '/cms-fn/:path*',
+    '/login',
+    '/logout',
+    '/monitoring/:path*',
+    '/api/:path*',
+    // The admin panel's root files, which `createCmsProxy` forwards only for an admin page.
+    '/wasm/:path*',
+    '/brand/:path*',
+    '/favicon.svg',
+    '/manifest.webmanifest',
+    // Pages opened for in-place editing.
+    { source: '/((?!_next|cms-preview_).*)', has: [{ type: 'query', key: 'edit_mode' }] },
+    { source: '/((?!_next|cms-preview_).*)', has: [{ type: 'query', key: 'ai_preview' }] },
   ],
 };

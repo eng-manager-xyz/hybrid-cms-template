@@ -1,95 +1,20 @@
-import { createFileRoute, notFound } from '@tanstack/react-router'
-import { cache, Suspense } from 'react'
-import { renderParametricRoute } from 'cms-renderer/lib/parametric-route'
+import { createFileRoute, notFound } from '@tanstack/react-router';
+import { ParametricPage } from 'cms-renderer';
+import { Welcome } from '@/components/Welcome';
+import { loadPublishedPage } from '@/lib/pages';
+import { registry } from '@/lib/registry';
 
+/** Every published page (prerendered at build time); `/` shows a welcome until it is published. */
 export const Route = createFileRoute('/$')({
-  component: CmsCatchAll,
-})
-
-function cmsEnv() {
-  return {
-    apiKey: process.env.PROFOUND_API_KEY,
-    cmsUrl:
-      process.env.NEXT_PUBLIC_CMS_API_URL ??
-      process.env.VITE_PUBLIC_CMS_API_URL ??
-      'https://cms.dev.tryprofound.com',
-    websiteId:
-      process.env.NEXT_PUBLIC_PROFOUND_WEBSITE_ID ??
-      process.env.VITE_PUBLIC_PROFOUND_WEBSITE_ID ??
-      '',
-  }
-}
-
-function stableRouteCacheKey(
-  segments: string[],
-  searchParams: Record<string, string | string[] | undefined>
-): string {
-  const env = cmsEnv()
-  const searchEntries = Object.entries(searchParams).sort(([a], [b]) => a.localeCompare(b))
-  return JSON.stringify({
-    slug: segments,
-    search: Object.fromEntries(searchEntries),
-    w: env.websiteId,
-    c: env.cmsUrl,
-  })
-}
-
-/** Dedupes parallel `renderParametricRoute` (e.g. React dev Strict Mode / streaming) → one tRPC batch. */
-const renderParametricRouteCached = cache(async (key: string) => {
-  const { slug, search } = JSON.parse(key) as {
-    slug: string[]
-    search: Record<string, string | string[] | undefined>
-  }
-  const env = cmsEnv()
-  return renderParametricRoute({
-    params: Promise.resolve({ slug }),
-    searchParams: Promise.resolve(search),
-    apiKey: env.apiKey,
-    cmsUrl: env.cmsUrl,
-    websiteId: env.websiteId || undefined,
-    registry: {},
-  })
-})
-
-function CmsCatchAll() {
-  const { _splat } = Route.useParams()
-  const rawSearch = Route.useSearch({ strict: false }) as
-    | Record<string, string | string[] | undefined>
-    | undefined
-
-  return (
-    <Suspense
-      fallback={
-        <main className="page-wrap px-4 pb-8 pt-14">
-          <p className="text-[var(--sea-ink-soft)]">Loading…</p>
-        </main>
-      }
-    >
-      <CmsCatchAllBody splat={_splat} searchParams={rawSearch ?? {}} />
-    </Suspense>
-  )
-}
-
-async function CmsCatchAllBody({
-  splat,
-  searchParams,
-}: {
-  splat?: string
-  searchParams: Record<string, string | string[] | undefined>
-}) {
-  const rawSegments = splat ? splat.split('/').filter(Boolean) : []
-  // CMS edit mode is served at /cms-preview_/<path>. This route is already
-  // request-time dynamic (searchParams flow through to renderParametricRoute),
-  // so we render the same content as <path> by stripping the cms-preview_ prefix.
-  const segments = rawSegments[0] === 'cms-preview_' ? rawSegments.slice(1) : rawSegments
-  const result = await renderParametricRouteCached(stableRouteCacheKey(segments, searchParams))
-
-  if (result.status === 'not_found') {
-    throw notFound()
-  }
-  if (result.status === 'error') {
-    throw result.error
-  }
-
-  return result.node
-}
+  loader: async ({ params }) => {
+    const result = await loadPublishedPage(params._splat);
+    if (result.kind === 'missing') throw notFound();
+    return result;
+  },
+  component: function CmsPage() {
+    const result = Route.useLoaderData();
+    if (result.kind === 'welcome') return <Welcome configured={result.configured} />;
+    if (result.kind !== 'page') return null;
+    return <ParametricPage page={result.page} registry={registry} />;
+  },
+});

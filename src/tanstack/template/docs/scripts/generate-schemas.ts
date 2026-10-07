@@ -1,29 +1,20 @@
-import { fetchAllCustomSchemaFields, saveZodSchemaCode } from 'cms-renderer/lib/custom-schemas';
-import { cmsConfig } from '../src/lib/cms-config';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
+import { Median } from 'cms-renderer';
+import { getCmsConfig } from '../src/lib/cms-config.server';
 
-async function main() {
-  const { cmsUrl, websiteId } = cmsConfig;
+const output = './src/generated/cms-schemas.ts';
 
-  if (!cmsUrl) {
-    throw new Error(
-      '[generate-schemas] NEXT_PUBLIC_CMS_API_URL is not set. Set it in your environment or .env file.'
-    );
-  }
-  if (!websiteId) {
-    throw new Error(
-      '[generate-schemas] NEXT_PUBLIC_PROFOUND_WEBSITE_ID is not set. Set it in your environment or .env file.'
-    );
-  }
-
-  await saveZodSchemaCode(
-    await fetchAllCustomSchemaFields(cmsConfig),
-    './src/generated/cms-schemas.ts'
+const { apiKey, datasetEndpoint, websiteId } = getCmsConfig();
+if (!websiteId || !apiKey || !datasetEndpoint) {
+  console.error(
+    '[generate-schemas] Set MEDIAN_WEBSITE_ID, MEDIAN_API_KEY and DATASET_ENDPOINT in .env first.'
   );
-
-  console.log('[generate-schemas] Done.');
+  process.exit(1);
 }
 
-main().catch((err) => {
-  console.error('[generate-schemas] Failed:', err);
-  process.exit(1);
-});
+const median = new Median({ apiKey, datasetEndpoint, websiteId, registry: {} });
+const schemas = await median.schemas();
+await mkdir(dirname(output), { recursive: true });
+await writeFile(output, await median.generateSchemas(schemas), 'utf-8');
+console.log(`[generate-schemas] Wrote ${schemas.length} component schemas to ${output}`);

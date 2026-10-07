@@ -1,34 +1,16 @@
-import type { Metadata } from "next";
-import { revalidatePath } from "next/cache";
-import { Refresher } from "cms-renderer/lib/refresher";
-import "./globals.css";
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "{{PROJECT_NAME}}",
-  description: "Built with create-profound-app",
+  title: '{{PROJECT_NAME}}',
+  description: 'Built with Median',
 };
 
-async function revalidate() {
-  "use server";
-  revalidatePath("/", "layout");
-}
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>
-        {children}
-        <Refresher
-          websiteId={process.env.NEXT_PUBLIC_PROFOUND_WEBSITE_ID ?? ""}
-          cmsUrl={process.env.NEXT_PUBLIC_CMS_API_URL ?? "https://cms.dev.tryprofound.com"}
-          apiKey={process.env.PROFOUND_API_KEY ?? ""}
-          onInvalidate={revalidate}
-        />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

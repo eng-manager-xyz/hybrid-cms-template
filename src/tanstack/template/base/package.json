@@ -1,40 +1,32 @@
 {
   "name": "{{PROJECT_NAME}}",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
-  "imports": {
-    "#/*": "./src/*"
-  },
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "vite dev",
     "build": "vite build",
-    "preview": "vite preview",
-    "test": "vitest run",
-    "generate-schemas": "bun scripts/generate-schemas.ts"
+    "start": "bun .output/server/index.mjs",
+    "generate-schemas": "bun scripts/generate-schemas.ts",
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.1.18",
-    "@tanstack/react-router": "^1.132.0",
-    "@tanstack/react-start": "^1.132.0",
-    "@tanstack/router-plugin": "^1.132.0",
-    "cms-renderer": "^0.8.2",
-    "lucide-react": "^0.545.0",
-    "nitro": "3.0.260429-beta",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "tailwindcss": "^4.1.18",
-    "zod": "^4.0.0"
+    "@tanstack/react-router": "1.170.32",
+    "@tanstack/react-start": "1.168.49",
+    "cms-renderer": "^2.0.2",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@tailwindcss/typography": "^0.5.16",
-    "@types/node": "^22.10.2",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
-    "@vitejs/plugin-react": "^6.0.1",
-    "jsdom": "^28.1.0",
-    "object-hash": "^3.0.0",
-    "typescript": "^5.9.3",
-    "vite": "^8.0.0",
-    "vitest": "^4.1.5"
+    "@tailwindcss/vite": "4.2.2",
+    "@types/node": "^25.5.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "6.1.0",
+    "nitro": "3.0.260610-beta",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^6.0.2",
+    "vite": "8.2.2"
   }
 }

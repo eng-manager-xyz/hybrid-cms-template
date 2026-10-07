@@ -14,17 +14,6 @@ const ImageReferenceSchema = z.object({
   }),
 });
 
-export const catSchema = z.object({
-  ordering: z.number().optional(),
-  /** Names of each category */
-  category_name: z.string(),
-  /** List of posts that belongs to this category */
-  post_list: z.array(z.record(z.string(), z.unknown())),
-});
-
-export type Cat = z.infer<typeof catSchema>;
-
-
 export const categoriesSchema = z.object({
   ordering: z.number().optional(),
   /** Names of each category */
@@ -39,7 +28,7 @@ export type Categories = z.infer<typeof categoriesSchema>;
 export const headerSchema = z.object({
   /** Brand icon displayed beside the logo text in the navbar */
   icon: ImageReferenceSchema.optional(),
-  /** Brand name shown beside the icon (e.g. "Profound") */
+  /** Brand name shown beside the icon (e.g. "Median") */
   logo_text: z.string(),
   /** Text for the admin panel link in the top-right (e.g. "Admin Panel") */
   admin_panel_label: z.string().optional(),
@@ -55,6 +44,10 @@ export type Header = z.infer<typeof headerSchema>;
 
 
 export const postSchema = z.object({
+  /** Optional Icon for GET POST OPTIONS PATCH */
+  icon_api: z.enum(['get', 'post', 'options', 'patch', 'custom']).optional(),
+  /** Icon For Post */
+  icon: z.string().optional(),
   title: z.string(),
   description: z.string(),
   content: z.unknown(),
@@ -64,6 +57,7 @@ export type Post = z.infer<typeof postSchema>;
 
 
 export const sectionsSchema = z.object({
+  ordering: z.number().optional(),
   title: z.string().optional(),
   categories_list: z.array(z.record(z.string(), z.unknown())).optional(),
 });
@@ -72,7 +66,13 @@ export type Sections = z.infer<typeof sectionsSchema>;
 
 
 export const uicontentSchema = z.object({
-  xyz: z.string().optional(),
+  /** Optional Icon for GET POST OPTIONS PATCH */
+  icon_api: z.enum(['get', 'post', 'options', 'patch', 'custom']).optional(),
+  /** Icon For Post */
+  icon: z.string().optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  content: z.unknown().optional(),
 });
 
 export type Uicontent = z.infer<typeof uicontentSchema>;
@@ -90,7 +90,6 @@ export const uifooterSchema = z.object({
 });
 
 export type Uifooter = z.infer<typeof uifooterSchema>;
-
 
 export const uisidebarSchema = z.object({
   categories: z.array(z.record(z.string(), z.unknown())).optional(),

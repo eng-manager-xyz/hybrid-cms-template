@@ -1,13 +1,25 @@
 {
-  "name": "create-profound-app",
-  "version": "0.2.2",
+  "name": "create-median-app",
+  "version": "1.0.0",
+  "description": "Create a Next.js or TanStack Start website powered by Median CMS",
+  "keywords": [
+    "median",
+    "mediancms",
+    "cms",
+    "nextjs",
+    "tanstack",
+    "create-app"
+  ],
   "private": false,
   "type": "module",
   "bin": {
-    "create-profound-app": "src/index.ts",
-    "create-profound-tanstack": "src/index.ts",
-    "create-profound-next": "src/index.ts"
+    "create-median-app": "src/index.ts",
+    "create-median-next": "src/index.ts",
+    "create-median-tanstack": "src/index.ts"
   },
+  "files": [
+    "src"
+  ],
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target bun",
     "dev": "bun run src/index.ts test-app --no-git"
